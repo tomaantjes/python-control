@@ -1054,7 +1054,17 @@ class TestStateSpace:
         np.testing.assert_allclose(np.array(pk.B).reshape(-1), Bmatlab)
         np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
         np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
-    
+
+    @pytest.mark.parametrize('nu, ny, errmatch',
+                             [(3, -1, "nu can't exceed"),
+                              (-1, 3, "ny can't exceed")])
+    def test_lft_invalid(self, nu, ny, errmatch):
+        """Test that lft() rejects out-of-range nu, ny values"""
+        P = rss(states=2, outputs=2, inputs=2)
+        K = rss(states=2, outputs=2, inputs=2)
+        with pytest.raises(ValueError, match=errmatch):
+            P.lft(K, nu, ny)
+
     def test_lft_labels(self):
         """Test that lft() propagates signal labels and allows overrides"""
         P = rss(
