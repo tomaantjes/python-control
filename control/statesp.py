@@ -1058,7 +1058,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
         return StateSpace(A, B, C, D, dt)
 
-    def lft(self, other, nu=-1, ny=-1):
+    def lft(self, other, nu=-1, ny=-1, **kwargs):
         """Return the linear fractional transformation.
 
         A definition of the LFT operator can be found in Appendix A.7,
@@ -1160,7 +1160,11 @@ class StateSpace(NonlinearIOSystem, LTI):
             [D11 + D12 @ H21, D12 @ H22],
             [Dbar21 @ H11, Dbar22 + Dbar21 @ H12]
         ])
-        return StateSpace(Ares, Bres, Cres, Dres, dt)
+        
+        inputs = self.input_labels[:self.ninputs-nu] + other.input_labels[ny:]
+        outputs = self.output_labels[:self.noutputs-ny] + other.output_labels[nu:]
+        sys = StateSpace(Ares, Bres, Cres, Dres, dt, inputs=inputs, outputs=outputs)
+        return StateSpace(sys, **kwargs) 
 
     def minreal(self, tol=0.0):
         """Remove unobservable and uncontrollable states.
