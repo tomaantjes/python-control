@@ -6,7 +6,7 @@ RMM, 30 Mar 2011 (based on TestBDAlg from v0.4a)
 import control as ctrl
 import numpy as np
 import pytest
-from control.bdalg import _ensure_tf, append, connect, feedback
+from control.bdalg import _ensure_tf, append, connect, feedback, lft
 from control.lti import poles, zeros
 from control.statesp import StateSpace
 from control.tests.conftest import assert_tf_close_coeff
@@ -339,6 +339,87 @@ class TestFeedback:
                 connect(sys, Q, [2], [1, 0])
             with pytest.raises(IndexError):
                 connect(sys, Q, [2], [1, -1])
+
+
+class TestLft:
+    """Tests for the lft function in bdalg.py."""
+
+    @pytest.mark.parametrize('nu, ny', [(-1, -1), (2, 1), (1, 2)])
+    def test_lft_matches_statespace_method(self, nu, ny):
+        """lft() should exactly reproduce StateSpace.lft() for SS inputs."""
+        P = ctrl.rss(states=3, outputs=3, inputs=3, strictly_proper=True)
+        K = ctrl.rss(states=3, outputs=3, inputs=3, strictly_proper=True)
+
+        ans = lft(P, K, nu, ny)
+        ref = P.lft(K, nu, ny)
+
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+    @pytest.mark.parametrize('nu, ny', [(-1, -1), (1, 1)])
+    def test_lft_tf_inputs(self, nu, ny):
+        """lft() should accept TransferFunction inputs, like
+        StateSpace.lft() does via conversion."""
+        P_ss = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        K_ss = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        P_tf = ctrl.tf(P_ss)
+        K_tf = ctrl.tf(K_ss)
+
+        ref = P_ss.lft(K_ss, nu, ny)
+        ans = lft(P_tf, K_tf, nu, ny)
+
+        for s in [0, 1, 1j]:
+            np.testing.assert_allclose(ans(s), ref(s), atol=1e-6)
+
+    @pytest.mark.parametrize('nu, ny, errmatch',
+                             [(3, -1, "nu can't exceed"),
+                              (-1, 3, "ny can't exceed")])
+    def test_lft_invalid_nu_ny(self, nu, ny, errmatch):
+        """Test that lft() rejects out-of-range nu, ny values."""
+        P = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        K = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        with pytest.raises(ValueError, match=errmatch):
+            lft(P, K, nu, ny)
+
+    def test_lft_labels(self):
+        """Test that lft() propagates signal labels and allows overrides."""
+        P = ctrl.rss(
+            states=2, outputs=['y1_p', 'y2_p', 'y3_p'],
+            inputs=['u1_p', 'u2_p'], strictly_proper=True)
+        K = ctrl.rss(
+            states=2, outputs=['y1_k', 'y2_k', 'y3_k'],
+            inputs=['u1_k', 'u2_k'], strictly_proper=True)
+
+        # case 1: nu = 2, ny = 1
+        pk = lft(P, K, nu=2, ny=1)
+        assert pk.input_labels == ['u2_k']
+        assert pk.output_labels == ['y1_p', 'y2_p', 'y3_k']
+
+        # case 2: nu = 1, ny = 2
+        pk = lft(P, K, nu=1, ny=2)
+        assert pk.input_labels == ['u1_p']
+        assert pk.output_labels == ['y1_p', 'y2_k', 'y3_k']
+
+        # test that keyword arguments passed to lft() override the labels
+        pk = lft(
+            P, K, nu=2, ny=0,
+            inputs=['u1', 'u2'], outputs=['y1', 'y2', 'y3', 'y4'],
+            states=['x1', 'x2', 'x3', 'x4'])
+        assert pk.input_labels == ['u1', 'u2']
+        assert pk.output_labels == ['y1', 'y2', 'y3', 'y4']
+        assert pk.state_labels == ['x1', 'x2', 'x3', 'x4']
+
+    def test_lft_bad_types(self):
+        """Non-system, non-convertible arguments should raise TypeError
+        rather than being silently routed into the general/interconnect
+        path."""
+        P = ctrl.rss(states=2, outputs=2, inputs=2)
+        with pytest.raises(TypeError):
+            lft('hello world', P)
+        with pytest.raises(TypeError):
+            lft(P, 'hello world')
 
 
 @pytest.mark.parametrize(
