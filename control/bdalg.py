@@ -315,11 +315,11 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
     return sys
 
 def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
-    """Linear fractional transformation (LFT) of two I/O systems.
+    """Linear fractional transformation of two I/O systems.
 
     Forms the Redheffer star product of `sys1` and `sys2` [1]_.
-    This connects the last `nu` outputs of `sys2` to the first `nu`
-    inputs of `sys1`, and the first `ny` outputs of `sys1` to the 
+    This connects the first `nu` outputs of `sys2` to the last `nu`
+    inputs of `sys1`, and the last `ny` outputs of `sys1` to the 
     first `ny` inputs of `sys2`.  If `sys2` has fewer inputs and
     outputs than `sys1`, this forms the lower LFT of `sys1` and
     `sys2`. If `sys1` has fewer inputs and outputs than `sys2`, 
@@ -393,12 +393,6 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
     elif not isinstance(sys2, InputOutputSystem):
         raise TypeError("sys2 must be an I/O system")
 
-    # Fill in default values for nu, ny
-    if ny == -1:
-        ny = min(sys2.ninputs, sys1.noutputs)
-    if nu == -1:
-        nu = min(sys2.noutputs, sys1.ninputs)
-
     # Check that nu, ny are within bounds
     if ny > sys1.noutputs or ny > sys2.ninputs:
         raise ValueError(
@@ -409,13 +403,15 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
             "nu can't exceed the number of inputs of sys1 or "
             "outputs of sys2")
 
-    if isinstance(sys1, (ss.StateSpace, tf.TransferFunction)) and \
-            isinstance(sys2, (ss.StateSpace, tf.TransferFunction)):
-        # Both systems can be converted to StateSpace; use the fast,
-        # linear-algebraic implementation in StateSpace.lft directly.
+    # maximal values for nu, ny
+    if ny == -1:
+        ny = min(sys2.ninputs, sys1.noutputs)
+    if nu == -1:
+        nu = min(sys2.noutputs, sys1.ninputs)
+
+    if isinstance(sys1, ss.StateSpace) and isinstance(sys2, ss.StateSpace):
         sys1_ss = ss._convert_to_statespace(sys1)
         return sys1_ss.lft(sys2, nu, ny, **kwargs)
-
 
     n1i, n1o = sys1.ninputs, sys1.noutputs
     n2i, n2o = sys2.ninputs, sys2.noutputs
