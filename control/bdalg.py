@@ -66,7 +66,7 @@ def series(*sys, **kwargs):
 
     See Also
     --------
-    append, feedback, interconnect, negate, parallel
+    append, feedback, interconnect, lft, negate, parallel
 
     Notes
     -----
@@ -139,7 +139,7 @@ def parallel(*sys, **kwargs):
 
     See Also
     --------
-    append, feedback, interconnect, negate, series
+    append, feedback, interconnect, lft, negate, series
 
     Notes
     -----
@@ -201,7 +201,7 @@ def negate(sys, **kwargs):
 
     See Also
     --------
-    append, feedback, interconnect, parallel, series
+    append, feedback, interconnect, lft, parallel, series
 
     Notes
     -----
@@ -266,7 +266,7 @@ def feedback(sys1, sys2=1, sign=-1, **kwargs):
 
     See Also
     --------
-    append, interconnect, negate, parallel, series
+    append, interconnect, lft, negate, parallel, series
 
     Notes
     -----
@@ -494,7 +494,7 @@ def append(*sys, **kwargs):
 
     See Also
     --------
-    interconnect, feedback, negate, parallel, series
+    interconnect, feedback, lft, negate, parallel, series
 
     Examples
     --------
@@ -556,7 +556,7 @@ def connect(sys, Q, inputv, outputv):
 
     See Also
     --------
-    append, feedback, interconnect, negate, parallel, series
+    append, feedback, interconnect, lft, negate, parallel, series
 
     Notes
     -----
