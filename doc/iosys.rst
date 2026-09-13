@@ -116,7 +116,7 @@ outputs of `G1` (signal `y1`) to the first `ny` inputs of `G2`, and
 the first `nu` outputs of `G2` (signal `y2`) to the last `nu` inputs
 of `G1`.  The resulting inputs of `G` are `[w1;w2]`, and the outputs
 `[z1;z2]`. Such an interconnection could be created for `G1` and `G2` 
-of any `InputOutputSystem` type using:
+of any input/output system except `FrequencyResponseData` using:
 
 .. code::
 

@@ -327,8 +327,9 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
 
     Parameters
     ----------
-    sys1, sys2 : `InputOutputSystem`
-        I/O systems to perform linear fractional transformation on.  
+    sys1, sys2 : scalar, array, or `InputOutputSystem`
+        I/O systems to perform linear fractional transformation on.
+        `FrequencyResponseData` systems are not supported.
     ny : int, optional
         Dimension of (plant) measurement output that is connected to
         `sys2`.  Must not exceed the number of outputs of `sys1` or
@@ -367,7 +368,8 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
         inputs of `sys1` or the number of outputs of `sys2`.
     TypeError
         If `sys1` or `sys2` is not an I/O system, or cannot be
-        converted to one.
+        converted to one, or if either is a `FrequencyResponseData` 
+        system.  
 
     See Also
     --------
@@ -388,11 +390,30 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
        Decision and Control, Brighton, England, 1991, pp. 1227-1232.
 
     """
-    if not isinstance(sys1, InputOutputSystem):
-        raise TypeError("sys1 must be an I/O system")
-    elif not isinstance(sys2, InputOutputSystem):
-        raise TypeError("sys2 must be an I/O system")
+    # Check for correct input types
+    if not isinstance(sys1, (int, float, complex, np.number, np.ndarray,
+                             InputOutputSystem)):
+        raise TypeError("sys1 must be an I/O system, scalar, or array")
+    elif not isinstance(sys2, (int, float, complex, np.number, np.ndarray,
+                               InputOutputSystem)):
+        raise TypeError("sys2 must be an I/O system, scalar, or array")
 
+    if isinstance(sys1, frd.FrequencyResponseData) or \
+            isinstance(sys2, frd.FrequencyResponseData):
+        raise TypeError("FrequencyResponseData systems are not supported")
+
+    # Convert systems to statespace if possible
+    convertible_types = (
+        int, float, complex, np.number, np.ndarray, tf.TransferFunction,
+        )
+    if isinstance(sys1, convertible_types):
+        sys1 = ss._convert_to_statespace(sys1)
+    if isinstance(sys2, convertible_types):
+        sys2 = ss._convert_to_statespace(sys2)
+    
+    if isinstance(sys1, ss.StateSpace) and isinstance(sys2, ss.StateSpace):
+        return sys1.lft(sys2, nu, ny, **kwargs)
+    
     # Check that nu, ny are within bounds
     if ny > sys1.noutputs or ny > sys2.ninputs:
         raise ValueError(
@@ -408,10 +429,6 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
         ny = min(sys2.ninputs, sys1.noutputs)
     if nu == -1:
         nu = min(sys2.noutputs, sys1.ninputs)
-
-    if isinstance(sys1, ss.StateSpace) and isinstance(sys2, ss.StateSpace):
-        sys1_ss = ss._convert_to_statespace(sys1)
-        return sys1_ss.lft(sys2, nu, ny, **kwargs)
 
     n1i, n1o = sys1.ninputs, sys1.noutputs
     n2i, n2o = sys2.ninputs, sys2.noutputs
@@ -429,12 +446,12 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
               [(1, i) for i in range(nu, n2o)]
 
     if not 'inputs' in kwargs:
-        inputs = sys1.input_labels[:sys1.ninputs-nu] + sys2.input_labels[ny:] 
+        inputs = sys1.input_labels[:n1i-nu] + sys2.input_labels[ny:] 
         kwargs['inputs'] = inputs
     
     if not 'outputs' in kwargs:
-        outputs = sys1.output_labels[:sys1.noutputs-ny] + sys2.output_labels[nu:]
-        kwargs['outputs'] = outputs 
+        outputs = sys1.output_labels[:n1o-ny] + sys2.output_labels[nu:]
+        kwargs['outputs'] = outputs
 
     return interconnect(
         [sys1, sys2], connections=connections,

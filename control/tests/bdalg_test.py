@@ -383,7 +383,7 @@ class TestLft:
         with pytest.raises(ValueError, match=errmatch):
             lft(P, K, nu, ny)
 
-    def test_lft_labels(self):
+    def test_lft_label_propagation(self):
         """Test that lft() propagates signal labels and allows overrides."""
         P = ctrl.rss(
             states=2, outputs=['y1_p', 'y2_p', 'y3_p'],
@@ -411,15 +411,88 @@ class TestLft:
         assert pk.output_labels == ['y1', 'y2', 'y3', 'y4']
         assert pk.state_labels == ['x1', 'x2', 'x3', 'x4']
 
-    def test_lft_bad_types(self):
-        """Non-system, non-convertible arguments should raise TypeError
-        rather than being silently routed into the general/interconnect
-        path."""
-        P = ctrl.rss(states=2, outputs=2, inputs=2)
+    def test_lft_args(self):
+        P = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+
+        # If first argument is not LTI or convertable, generate an exception
+        args = ('hello world', P)
         with pytest.raises(TypeError):
-            lft('hello world', P)
+            lft(*args)
+
+        # If second argument is not LTI or convertable, generate an exception
+        args = (P, 'hello world')
         with pytest.raises(TypeError):
-            lft(P, 'hello world')
+            lft(*args)
+
+        # If first or second argument is FRD, generate an exception
+        h = TransferFunction([1], [1, 2, 2])
+        omega = np.logspace(-1, 2, 10)
+        frd = ctrl.FRD(h, omega)
+        with pytest.raises(TypeError):
+            lft(1, frd)
+        with pytest.raises(TypeError):
+            lft(frd, 1)
+
+    def test_lft_scalar_inputs(self):
+        """lft() should accept a scalar for either argument, converting
+        it to a static-gain StateSpace system, like feedback() does."""
+        x1, x2 = 2.5, -3.
+        K = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        P = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+
+        ans = lft(x1, K)
+        ref = StateSpace([], [], [], [x1]).lft(K)
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+        ans = lft(P, x2)
+        ref = P.lft(StateSpace([], [], [], [x2]))
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+    def test_lft_array_inputs(self):
+        """lft() should accept an array for either argument, converting
+        it to a static-gain StateSpace system."""
+        D1 = np.array([[1., 2.], [3., 4.]])
+        D2 = np.array([[0.5, 0.], [0., 0.5]])
+        K = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        P = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+
+        ans = lft(D1, K)
+        ref = StateSpace([], [], [], D1).lft(K)
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+        ans = lft(P, D2)
+        ref = P.lft(StateSpace([], [], [], D2))
+        np.testing.assert_array_almost_equal(ans.A, ref.A)
+        np.testing.assert_array_almost_equal(ans.B, ref.B)
+        np.testing.assert_array_almost_equal(ans.C, ref.C)
+        np.testing.assert_array_almost_equal(ans.D, ref.D)
+
+    @pytest.mark.parametrize('nu, ny', [(-1, -1), (1, 1)])
+    def test_lft_tf_ss_mixed_inputs(self, nu, ny):
+        """lft() should accept a mix of TransferFunction and StateSpace
+        arguments, using the StateSpace.lft() fast path for both."""
+        P_ss = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        K_ss = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
+        P_tf = ctrl.tf(P_ss)
+        K_tf = ctrl.tf(K_ss)
+        ref = P_ss.lft(K_ss, nu, ny)
+
+        ans = lft(P_ss, K_tf, nu, ny)
+        for s in [0, 1, 1j]:
+            np.testing.assert_allclose(ans(s), ref(s), atol=1e-6)
+
+        ans = lft(P_tf, K_ss, nu, ny)
+        for s in [0, 1, 1j]:
+            np.testing.assert_allclose(ans(s), ref(s), atol=1e-6)
 
 
 @pytest.mark.parametrize(
