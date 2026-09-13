@@ -411,9 +411,12 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
     if isinstance(sys2, convertible_types):
         sys2 = ss._convert_to_statespace(sys2)
     
-    if isinstance(sys1, ss.StateSpace) and isinstance(sys2, ss.StateSpace):
-        return sys1.lft(sys2, nu, ny, **kwargs)
-    
+    # Maximal values for nu, ny
+    if ny == -1:
+        ny = min(sys2.ninputs, sys1.noutputs)
+    if nu == -1:
+        nu = min(sys2.noutputs, sys1.ninputs)
+
     # Check that nu, ny are within bounds
     if ny > sys1.noutputs or ny > sys2.ninputs:
         raise ValueError(
@@ -424,12 +427,11 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
             "nu can't exceed the number of inputs of sys1 or "
             "outputs of sys2")
 
-    # maximal values for nu, ny
-    if ny == -1:
-        ny = min(sys2.ninputs, sys1.noutputs)
-    if nu == -1:
-        nu = min(sys2.noutputs, sys1.ninputs)
-
+    # If sys1 and sys2 are StateSpace, use ss.lft function
+    if isinstance(sys1, ss.StateSpace) and isinstance(sys2, ss.StateSpace):
+        return sys1.lft(sys2, nu, ny, **kwargs)
+    
+    # If sys1 and sys2 are not StateSpace, use interconnect
     n1i, n1o = sys1.ninputs, sys1.noutputs
     n2i, n2o = sys2.ninputs, sys2.noutputs
 
