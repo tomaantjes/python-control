@@ -1119,6 +1119,13 @@ class StateSpace(NonlinearIOSystem, LTI):
         """
         other = _convert_to_statespace(other)
 
+
+        # maximal values for nu, ny
+        if ny == -1:
+            ny = min(other.ninputs, self.noutputs)
+        if nu == -1:
+            nu = min(other.noutputs, self.ninputs)
+
         # dimension check
         if ny > self.noutputs or ny > other.ninputs:
             raise ValueError(
@@ -1128,12 +1135,6 @@ class StateSpace(NonlinearIOSystem, LTI):
             raise ValueError(
                 "nu can't exceed the number of inputs of self or "
                 "outputs of other")
-
-        # maximal values for nu, ny
-        if ny == -1:
-            ny = min(other.ninputs, self.noutputs)
-        if nu == -1:
-            nu = min(other.noutputs, self.ninputs)
 
         dt = common_timebase(self.dt, other.dt)
 
