@@ -462,18 +462,17 @@ class TestLft:
     def test_lft_args(self):
         P = ctrl.rss(states=2, outputs=2, inputs=2, strictly_proper=True)
 
-        # If first argument is not LTI or convertable, generate an exception
+        # If first or second argument is not LTI or convertable to it, 
+        # generate an exception
         args = ('hello world', P)
         with pytest.raises(TypeError):
             lft(*args)
-
-        # If second argument is not LTI or convertable, generate an exception
         args = (P, 'hello world')
         with pytest.raises(TypeError):
             lft(*args)
 
         # If first or second argument is FRD, generate an exception
-        h = TransferFunction([1], [1, 2, 2])
+        h = TransferFunction([1], [1, 2, 3])
         omega = np.logspace(-1, 2, 10)
         frd = ctrl.FRD(h, omega)
         with pytest.raises(TypeError):
