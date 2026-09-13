@@ -1116,6 +1116,20 @@ class StateSpace(NonlinearIOSystem, LTI):
            LMIs, and mu," Proceedings of the 30th IEEE Conference on
            Decision and Control, Brighton, England, 1991, pp. 1227-1232.
 
+        Examples
+        --------
+        >>> G1 = ct.rss(3, inputs=3, outputs=3)
+        >>> G2 = ct.rss(3, inputs=3, outputs=3)
+        >>> G = G1.lft(G2, nu=2, ny=1)
+        >>> G.ninputs, G.noutputs, G.nstates
+        (3, 3, 6)
+
+        >>> G1 = ct.rss(3, inputs=4, outputs=4)
+        >>> G2 = ct.rss(2, inputs=2, outputs=2)
+        >>> G = G1.lft(G2)
+        >>> G.ninputs, G.noutputs, G.nstates
+        (2, 2, 5)
+
         """
         other = _convert_to_statespace(other)
 
