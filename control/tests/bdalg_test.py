@@ -396,6 +396,14 @@ class TestLft:
         assert pk.output_labels == ['y1', 'y2', 'y3', 'y4']
         assert pk.state_labels == ['x1', 'x2', 'x3', 'x4']
 
+        # check that labels go back to default if duplicate labels occur
+        P = ctrl.rss(states=3, inputs=4, outputs=4, strictly_proper=True)
+        K = ctrl.rss(states=2, inputs=3, outputs=3, strictly_proper=True)
+
+        pk = lft(P, K, nu=2, ny=1)
+        assert pk.input_labels == ['u[0]', 'u[1]', 'u[2]', 'u[3]']
+        assert pk.output_labels == ['y[0]', 'y[1]', 'y[2]', 'y[3]']
+
     @pytest.mark.parametrize('nu, ny', [(-1, -1), (1, 1)])
     def test_lft_tf_inputs(self, nu, ny):
         """Test that lft() accepts TransferFunction inputs."""

@@ -664,6 +664,24 @@ class TestIOSys:
         assert sys_lft.output_labels == ['y1', 'y2', 'y3']
         assert sys_lft.name == 'new_sys'
 
+        # check that labels go back to default if duplicate labels occur
+        sys3_ss = ct.rss(states=3, inputs=4, outputs=4,
+                          strictly_proper=True)
+        sys4_ss = ct.rss(states=2, inputs=3, outputs=3,
+                          strictly_proper=True)
+        sys3_nl = ct.NonlinearIOSystem(
+            lambda t, x, u, params: sys3_ss.A @ x + sys3_ss.B @ u,
+            lambda t, x, u, params: sys3_ss.C @ x + sys3_ss.D @ u,
+            states=3, inputs=4, outputs=4, name='sys3')
+        sys4_nl = ct.NonlinearIOSystem(
+            lambda t, x, u, params: sys4_ss.A @ x + sys4_ss.B @ u,
+            lambda t, x, u, params: sys4_ss.C @ x + sys4_ss.D @ u,
+            states=2, inputs=3, outputs=3, name='sys4')
+
+        sys_lft = ct.lft(sys3_nl, sys4_nl, nu=2, ny=1)
+        assert sys_lft.input_labels == ['u[0]', 'u[1]', 'u[2]', 'u[3]']
+        assert sys_lft.output_labels == ['y[0]', 'y[1]', 'y[2]', 'y[3]']
+
     def test_bdalg_functions(self, tsys):
         """Test block diagram functions algebra on I/O systems"""
         # Set up parameters for simulation

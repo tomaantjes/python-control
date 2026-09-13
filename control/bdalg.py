@@ -462,11 +462,19 @@ def lft(sys1, sys2, nu=-1, ny=-1, **kwargs):
               [(1, i) for i in range(nu, n2o)]
 
     if not 'inputs' in kwargs:
-        inputs = sys1.input_labels[:n1i-nu] + sys2.input_labels[ny:] 
+        inputs = sys1.input_labels[:n1i-nu] + sys2.input_labels[ny:]
+        # If sys1 and sys2 have clashing input labels, fallback to 
+        # default names
+        if len(set(inputs)) != len(inputs):
+            inputs = len(inputs)
         kwargs['inputs'] = inputs
-    
+
     if not 'outputs' in kwargs:
         outputs = sys1.output_labels[:n1o-ny] + sys2.output_labels[nu:]
+        # If sys1 and sys2 have clashing output labels, fallback to 
+        # default names
+        if len(set(outputs)) != len(outputs):
+            outputs = len(outputs)
         kwargs['outputs'] = outputs
 
     return interconnect(

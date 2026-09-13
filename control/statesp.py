@@ -1218,10 +1218,21 @@ class StateSpace(NonlinearIOSystem, LTI):
             [Dbar21 @ H11, Dbar22 + Dbar21 @ H12]
         ])
         
-        inputs = self.input_labels[:self.ninputs-nu] + other.input_labels[ny:]
-        outputs = self.output_labels[:self.noutputs-ny] + other.output_labels[nu:]
-        sys = StateSpace(Ares, Bres, Cres, Dres, dt, inputs=inputs, outputs=outputs)
-        return StateSpace(sys, **kwargs) 
+        inputs = self.input_labels[:self.ninputs-nu] + \
+            other.input_labels[ny:]
+        outputs = self.output_labels[:self.noutputs-ny] + \
+            other.output_labels[nu:]
+
+        # If self and other have clashing input and output names, fallback
+        # to default names
+        if len(set(inputs)) != len(inputs):
+            inputs = len(inputs)
+        if len(set(outputs)) != len(outputs):
+            outputs = len(outputs)
+
+        sys = StateSpace(
+            Ares, Bres, Cres, Dres, dt, inputs=inputs, outputs=outputs)
+        return StateSpace(sys, **kwargs)
 
     def minreal(self, tol=0.0):
         """Remove unobservable and uncontrollable states.
