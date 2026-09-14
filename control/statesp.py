@@ -1133,7 +1133,6 @@ class StateSpace(NonlinearIOSystem, LTI):
         """
         other = _convert_to_statespace(other)
 
-
         # maximal values for nu, ny
         if ny == -1:
             ny = min(other.ninputs, self.noutputs)
