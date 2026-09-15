@@ -404,6 +404,7 @@ class TestLft:
         assert pk.input_labels == ['u[0]', 'u[1]', 'u[2]', 'u[3]']
         assert pk.output_labels == ['y[0]', 'y[1]', 'y[2]', 'y[3]']
 
+    @pytest.mark.slycot
     @pytest.mark.parametrize('nu, ny', [(-1, -1), (1, 1)])
     def test_lft_tf_inputs(self, nu, ny):
         """Test that lft() accepts TransferFunction inputs."""
